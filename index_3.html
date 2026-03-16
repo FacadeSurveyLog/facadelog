@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Glass Aftercare FaçadeLog</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Inter',sans-serif;background:#f0f2f0;color:#1a2820;height:100dvh}
+:root{
+  --green:#2a6e3f;--green-dk:#1a4a2a;--green-lt:#e8f4ec;
+  --bg:#f0f2f0;--surf:#fff;--card:#f7f9f7;--border:#d4ddd6;
+  --text:#1a2820;--muted:#6b7d72;--dim:#8a9e92;
+  --low:#1a6b2a;--med:#b45309;--high:#c0392b;--crit:#7b2d8b;
+  --low-lt:#e8f4ec;--med-lt:#fef3e2;--high-lt:#fce8e6;--crit-lt:#f3e8f8;
+  --complete:#1a5a8a;--complete-lt:#e6f0fa;
+}
+input,textarea{font-family:'Inter',sans-serif;outline:none;color:var(--text);background:#fff;border:1.5px solid var(--border);border-radius:10px;font-size:14px;transition:border-color .15s}
+input:focus,textarea:focus{border-color:var(--green)}
+button{font-family:'Inter',sans-serif;cursor:pointer}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);overflow:hidden}
+.hidden{display:none!important}
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.btn{padding:14px;border-radius:12px;border:none;font-size:14px;font-weight:600;width:100%;transition:opacity .15s;cursor:pointer}
+.btn:active{opacity:.82}
+.btn-accent{background:var(--green);color:#fff}
+.btn-ghost{background:transparent;border:1.5px solid var(--border);color:var(--text)}
+.btn-danger{background:#fce8e6;border:1.5px solid #f5c6c2;color:#c0392b}
+.btn-complete{background:#1a5a8a;color:#fff}
+.btn-outline-complete{background:transparent;border:1.5px solid var(--complete);color:var(--complete);border-radius:12px;padding:13px;font-size:13px;font-weight:600;width:100%}
+.input-field{width:100%;padding:12px 14px;background:#fff;border:1.5px solid var(--border);border-radius:10px;color:var(--text);font-family:'Inter',sans-serif;font-size:14px}
+.input-field:focus{border-color:var(--green);outline:none}
+.field-lbl{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px;font-weight:600}
+.app-header{background:var(--green-dk);padding:10px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0}
+.app-header img{height:32px;border-radius:4px}
+.app-header-title{color:#fff;font-size:14px;font-weight:700}
+.app-header-sub{color:rgba(255,255,255,.55);font-size:10px;letter-spacing:.08em;text-transform:uppercase;margin-top:1px}
+#bottom-nav{background:#fff;border-top:1.5px solid var(--border);display:flex;flex-shrink:0;padding-bottom:env(safe-area-inset-bottom,4px)}
+.nav-btn{flex:1;padding:10px 0 11px;background:none;border:none;border-top:3px solid transparent;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);transition:color .15s,border-color .15s}
+.nav-btn.active{color:var(--green);border-top-color:var(--green)}
+.nav-btn span:first-child{font-size:18px}
+.nav-btn span:last-child{font-size:9px;text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.45);display:flex;align-items:flex-end}
+.modal-sheet{width:100%;max-height:92dvh;overflow-y:auto;background:#fff;border-radius:20px 20px 0 0;border-top:4px solid var(--green);padding-bottom:env(safe-area-inset-bottom,20px)}
+.modal-header{padding:18px 20px 12px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:#fff;z-index:1;border-bottom:1.5px solid var(--border)}
+.modal-title{color:var(--text);font-size:15px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--muted);font-size:22px;padding:4px;line-height:1}
+.modal-body{padding:16px 20px;display:flex;flex-direction:column;gap:18px}
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.type-btn{padding:9px 10px;border-radius:8px;font-size:11px;font-family:'Inter',sans-serif;text-align:left;border:1.5px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;font-weight:500}
+.type-btn.sel{border-color:var(--green);background:var(--green-lt);color:var(--green)}
+.sev-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sev-btn{padding:12px 10px;border-radius:10px;font-family:'Inter',sans-serif;font-size:13px;border:2px solid var(--border);background:#fff;color:var(--muted);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;font-weight:600}
+.sev-btn sub{font-size:10px;opacity:.75;font-weight:400}
+.survey-bar{padding:10px 16px;background:#fff;border-bottom:1.5px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.tag-btn{padding:8px 14px;border-radius:20px;border:none;font-size:12px;font-weight:700;transition:all .15s}
+.tag-btn.active{background:var(--green);color:#fff}
+.tag-btn.inactive{background:var(--green-lt);color:var(--green);border:1.5px solid #b8d8c4}
+.defect-card{background:#fff;border:1.5px solid var(--border);border-radius:0 12px 12px 0;display:flex;overflow:hidden;cursor:pointer}
+.defect-card:active{background:var(--green-lt)}
+.defect-stripe{width:5px;flex-shrink:0}
+.defect-num{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.defect-thumb{width:50px;height:50px;object-fit:cover;border-radius:8px;flex-shrink:0;border:1.5px solid var(--border)}
+.summary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:12px 16px}
+.summary-card{background:#fff;border:1.5px solid var(--border);border-radius:10px;padding:10px 4px;text-align:center}
+.pin{position:absolute;transform:translate(-50%,-100%);z-index:10;background:none;border:none;cursor:pointer;padding:0}
+.pin-head{width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.3),0 0 0 2px rgba(255,255,255,.8)}
+.pin-head span{transform:rotate(45deg);font-size:9px;font-weight:700;color:#fff}
+.photo-btn{width:100%;padding:16px;background:var(--bg);border:2px dashed var(--border);border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;color:var(--muted);font-size:12px;font-weight:500}
+.export-btn{background:#fff;border:1.5px solid var(--green);color:var(--green);border-radius:12px;padding:13px;font-size:13px;font-weight:700;width:100%;display:flex;align-items:center;justify-content:center;gap:8px}
+.action-row{background:#fff;border-radius:10px;border:1.5px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--text);cursor:pointer;text-align:left;width:100%;font-weight:500}
+.action-row:active{background:var(--green-lt)}
+.badge{padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600}
+.section-hdr{padding:10px 16px;flex-shrink:0}
+.section-hdr-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:600}
+.auth-tab{flex:1;padding:10px 0;border:none;background:transparent;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;transition:all .15s}
+.auth-tab.active{color:var(--green);border-bottom-color:var(--green)}
+.survey-hist-card{background:#fff;border:1.5px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer}
+.survey-hist-card:active{border-color:var(--green)}
+/* Completed works banner */
+.completed-banner{background:var(--complete);padding:8px 16px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+/* Annotator */
+#annotator-screen{position:fixed;inset:0;z-index:3000;background:#000;display:flex;flex-direction:column}
+#annotator-canvas{display:block;touch-action:none;flex:1;width:100%}
+.ann-tool-btn{padding:8px 12px;border-radius:8px;border:none;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:#fff;background:rgba(255,255,255,.2);transition:background .15s}
+.ann-tool-btn.sel{background:rgba(255,255,255,.5)}
+.color-dot{width:26px;height:26px;border-radius:50%;border:3px solid transparent;cursor:pointer;flex-shrink:0}
+.color-dot.sel{border-color:#fff}
+#draw-canvas{touch-action:none;border-radius:8px;border:1.5px solid var(--border);display:block}
+.scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.spinner{display:inline-block;width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-overlay{position:fixed;inset:0;z-index:2000;background:rgba(255,255,255,.85);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.loading-spinner{width:36px;height:36px;border:3px solid var(--green-lt);border-top-color:var(--green);border-radius:50%;animation:spin .8s linear infinite}
+#toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--green-dk);color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;font-weight:600;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center}
+</style>
+</head>
+<body>
+<div id="toast"></div>
+<div id="loading-overlay" class="loading-overlay" style="display:none"><div class="loading-spinner"></div><div style="color:var(--muted);font-size:13px;font-weight:500">Loading…</div></div>
+
+<!-- PHOTO ANNOTATOR (full screen) -->
+<div id="annotator-screen" style="display:none;flex-direction:column">
+  <div style="padding:10px 12px;background:#111;display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex-shrink:0">
+    <button onclick="closeAnnotator(false)" style="padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,.15);color:#fff;font-family:'Inter',sans-serif;font-size:12px;font-weight:600">✕ Cancel</button>
+    <div style="display:flex;gap:6px;flex:1;flex-wrap:wrap;align-items:center">
+      <button class="ann-tool-btn sel" id="ann-pen" onclick="setAnnTool('pen')">✏️ Pen</button>
+      <button class="ann-tool-btn" id="ann-arrow" onclick="setAnnTool('arrow')">➡️ Arrow</button>
+      <button class="ann-tool-btn" id="ann-circle" onclick="setAnnTool('circle')">⭕ Circle</button>
+      <button class="ann-tool-btn" id="ann-text" onclick="setAnnTool('text')">T Text</button>
+      <button onclick="annUndo()" style="padding:8px 12px;border-radius:8px;border:none;background:rgba(255,255,255,.15);color:#fff;font-family:'Inter',sans-serif;font-size:12px;font-weight:600">↩ Undo</button>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <div class="color-dot sel" style="background:#ff3b30" data-color="#ff3b30" onclick="setAnnColor(this)"></div>
+      <div class="color-dot" style="background:#ffcc00" data-color="#ffcc00" onclick="setAnnColor(this)"></div>
+      <div class="color-dot" style="background:#34c759" data-color="#34c759" onclick="setAnnColor(this)"></div>
+      <div class="color-dot" style="background:#fff" data-color="#fff" onclick="setAnnColor(this)"></div>
+    </div>
+    <button onclick="closeAnnotator(true)" style="padding:8px 16px;border-radius:8px;border:none;background:var(--green);color:#fff;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">✓ Save</button>
+  </div>
+  <div style="flex:1;overflow:hidden;display:flex;align-items:center;justify-content:center;background:#000">
+    <canvas id="annotator-canvas"></canvas>
+  </div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div id="screen-auth" class="screen hidden" style="background:#fff">
+  <div style="background:var(--green-dk);padding:28px 24px 22px;display:flex;flex-direction:column;align-items:center;gap:12px;flex-shrink:0">
+    <img src="data:image/jpeg;base64,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" style="height:64px;border-radius:10px" alt="Glass Aftercare"/>
+    <div style="text-align:center">
+      <div style="color:#fff;font-size:20px;font-weight:700">FaçadeLog</div>
+      <div style="color:rgba(255,255,255,.55);font-size:11px;text-transform:uppercase;letter-spacing:.1em;margin-top:3px">Glass Aftercare</div>
+    </div>
+  </div>
+  <div style="display:flex;border-bottom:1.5px solid var(--border);background:#fff;flex-shrink:0">
+    <button class="auth-tab active" id="tab-login-btn" onclick="showAuthTab('login')">Sign In</button>
+    <button class="auth-tab" id="tab-register-btn" onclick="showAuthTab('register')">Create Account</button>
+  </div>
+  <div class="scroll-area" style="padding:24px 20px;display:flex;flex-direction:column;gap:16px;max-width:480px;margin:0 auto;width:100%">
+    <div id="auth-login">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div><div class="field-lbl">Email</div><input id="login-email" class="input-field" type="email" placeholder="you@example.com" autocomplete="email"/></div>
+        <div><div class="field-lbl">Password</div><input id="login-password" class="input-field" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
+        <div id="login-error" style="color:#c0392b;font-size:13px;display:none;background:#fce8e6;padding:10px 12px;border-radius:8px"></div>
+        <button class="btn btn-accent" id="login-btn" onclick="doLogin()">Sign In →</button>
+      </div>
+    </div>
+    <div id="auth-register" class="hidden">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div><div class="field-lbl">Full Name</div><input id="reg-name" class="input-field" type="text" placeholder="e.g. James Smith" autocomplete="name"/></div>
+        <div><div class="field-lbl">Email</div><input id="reg-email" class="input-field" type="email" placeholder="you@example.com" autocomplete="email"/></div>
+        <div><div class="field-lbl">Password</div><input id="reg-password" class="input-field" type="password" placeholder="Min. 6 characters" autocomplete="new-password"/></div>
+        <div id="reg-error" style="color:#c0392b;font-size:13px;display:none;background:#fce8e6;padding:10px 12px;border-radius:8px"></div>
+        <button class="btn btn-accent" id="register-btn" onclick="doRegister()">Create Account →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="screen-dashboard" class="screen hidden">
+  <div class="app-header" style="justify-content:space-between">
+    <div style="display:flex;align-items:center;gap:12px">
+      <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCADhAOEDASIAAhEBAxEB/8QAHQABAAMAAwEBAQAAAAAAAAAAAAYHCAMEBQECCf/EAFQQAAEDAwEDBAkPCQUHBQAAAAABAgMEBQYRBxIhEzFBUQgUFyJVVnGU0hYYMjZUYXR1gZGSsbKz0RUzNVJyk5Wh0yM3QkZiJDRDRXOCwoSio8HD/8QAGwEBAAIDAQEAAAAAAAAAAAAAAAMFAQQGAgf/xAA3EQACAQMBAgwFAwQDAAAAAAAAAQIDBBEFITESExQVNEFRUmFxkdEygaGx4QYzUxYiwfFD0vD/2gAMAwEAAhEDEQA/AKiABqHzcAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlYABYEUAAK8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlYABYEUAAK8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlYABYEUAAK8AAAAFobIdi+Q57G25zSfkix72iVcse8+fTnSJnDVOjeVUTXm3lRUQk3uJaNCpXlwKayyrwbNs/Y8bNKKlSKroK+6S9M1TXSMcvyRKxv8AI73cE2VeLL/4jU/1CTi5FqtCuWt69X7GJAbb7gmyrxZf/Ean+oO4Jsq8WX/xGp/qDipGeYbntXq/YxIDbfcE2VeLL/4jU/1D8TbAdlkkTmNx6aJypwey4VGqfO9U/kOKkOYbntXq/YxODQO0zsb6+2UstywmumukUaK59BVbqT6dO49ERr1/0qiL76rwKAkY+OR0cjHMexVa5rk0VqpwVFToU8NNbysubSrbS4NRYPyAT/C9mldd4I667TPoKN6I5kbU1mkTr48Gp5dV97pNe4uaVvHh1HhHijRnWlwYLJAAX3Bs0xCONGOt80ypzvfUyar9FUT+RydzjDvBLvOpfSKl/qC17Jei9ze5prdq+vsUAC/+5xh3gl3nUvpDucYd4Jd51L6Q/qG27svRe45prdq+vsUAC/8AucYd4Jd51L6RxVGzTEZYlYyhngcvM+Opeqp9JVT+QX6gteyXovcc01+1fX2KFBPM22b11lp5K+2SvuFEzjI1W6SxJ1qicHJ1qmmnVpxIGW1vc0riHDpvKNGrRnRlwZrAABORAAAErAALAigABXgAAE42H4U3O9oVHZ6lHfk+JrqquVqqirCxU71F6Fc5Wt60RVVOY3ZSwQUtNFS00McMELEjjjjajWsaiaI1ETmRE4aGZ+whhjdcssnVqLJHDSMavUjnTKv2U+Y04T0lsydhotGMLZTW+X+gCr+yO2gXXAcSo6iyRQLX19VyDJZm7zYmo1XK5G9LuCImvDivkM+euB2n+F6PzGP8DLmk8E9zqlC2nwJ5ybTBiz1wO0/wvR+Yx/gPXA7T/C9H5jH+BjjUa/Plt4+n5NpgxZ64Haf4Xo/MY/wLD2AbacsybPqfGck7VrIa6OTkZo4UifC9jHP46cFaqNVObXXTjzhVE3gkpaxb1ZqCzl+BpAy72X+B09vrKXObXAkcdbL2vcmMThyuiqyXTo3kRyOXrRvSqqaiK/7IuhjuGxfI45G68lTtqGr1Oje16fZPU1mJsahQjWt5J9SyvkZP2PY7Feb++trI0kpKBGvVipwfIvsUXrRNFVfInWXoV/sJiazEamVPZSVz9V06EYxET6/nJ+fPNYryq3Uk90diKvT6ShQTXXtAK72rZrdcfuVNbLUkMb3wJPJNIzfXRXOajUReCexXVffTmIV3TMv920/mrPwM2+jXFemqkcYfa/wYq6jRpTcHnKL5BQ3dMy/3bT+as/Ad0zL/AHbT+as/Am/p+67V6v2I+daHiXyChu6Zl/u2n81Z+BPNk+X3LI3VtJdGxPlp2tkZLG3d3kVVTRUThw60ILnR7i3pupLGF2P8EtHUKVWahHOWT0oba3jsViyJs1HGkdFXNWWNjeZj0Xv2p73FFTy6dBfJXe3uJi4vQTKnfsrkYi+86N6r9lDOjV5UrqMVulsZjUaSnQbe9FMAA7k5kAAAlYABYEUAAK8AAA0h2D6f7TmC9TKFP51BpgzR2D35/Mf2aD66k0uT0vhO20nocPn92Z+7Nj2qY98Pf92plg1P2bHtUx74e/7tTLBHU+I57WelvyQAB4KoFgdjvc7dZtsFkuV2rqago4UqOUnqJEjjZrTyImrl4JqqonlUr8BPDJKNR0qkZrqeTfXdO2dePGPfxCP8SGbcNoOFXLZRkNBassstZWT03JxQQVrHvfq5uqIiLqvDUxwD26jZcVNdqTg48FbS39jt8s1txKSnuF1oqSZat70ZNM1rtFa3RdF8ikz9VeMeMNr85b+Jm0FBcaHTr1ZVHJ7TWpanOnBQUVsJttluFBcspp57fWQVcTaJjFfC9HtR2/IumqdOip85CQC2t6KoUo009xoVajqzc31gAExGCzNgP6Xuvwdn2lKzLM2A/pe6/B2faUrdX6HP5fdG5YdIj/7qLfK/28+1Cj+MWfdSlgFf7efahR/GLPupTkdM6XT8y/vf2JeRSgAPoBygAABKwACwIoAAV4AABpHsHvz+Y/s0H11JpczR2D35/Mf2aD66k0uT0vhO30nocPn92Z+7Nj2qY98Pf92plg1P2bHtUx74e/7tTLBHU+I53WelvyR8cujVXqQ1bZ+xqwittFHWS3rJmyT07JXI2op9EVzUVdNYebiZSf7B3kP6MYv7WrX8Dh+wgpxT3k+i29Ks58ZHOMf5Ke9bDgvhzKPOKf8Aoj1sOC+HMo84p/6JeQJeLiX/ADda9xFG+thwXw5lHnFP/RIrtb2DYliGzu7ZHbbrf56uiYx0cdTNC6N29I1q6o2JF5nLzKhpwrrslP7kMk/6UX38ZhwikQ3NhbRozagspP7GHCT4jg97yNiVELGUtFrp2xPqiO69xOd31e+cmzHGWZJf1SqRVoKRqSVCJw39V71mvRrovyIpf8bGRxtjjY1jGIjWtamiNROZEToQ5vVdWds+KpfF1+H5OesbBVlw57vuVvTbIbU2NEqbxXSSacVjYxifMqO+s5e5HYvCd0+lH6BYgOeeq3j/AOR/QtuQ2/dK77kdi8J3T6UfoDuR2LwndPpR+gWIDHOt3/IxyG37pRG07EaDFfyd2lU1U/bXK7/LK1dNzc000RP1lPY2A/pe6/B2faU7XZBf8i/9R/8AkdXYD+l7r8HZ9pS+lVnV0hzm8t/9irjCNO/UYrC/Bb5X+3n2oUfxiz7qUsAr/bz7UKP4xZ91KUGmdLp+Za3v7EvIpQAH0A5QAAAlYABYEUAAK8AAA0j2D35/MU/00P11BpczN2D/APveYfsUP11BpknpfCdtpHQ4fP7sz92bHtUx74e/7tTLBqrs1opXYdYZ2xuWJlxc1z0Tg1Vjdoi+XRfmMqkdT4jnta6W/JBU1RU6y4aHsjNoFHRQUkNNj/JwRtjZvUkiro1NE1/tPeKeB4Ta3GhRuKtDPFyxkuf1ym0T3Lj3mcn9UmmxPbbmWZbSLdj13gs7KOoZM5609O9j9WRucmiq9U50ToMyFp9ipBNNtrtb4o3PbBT1MkqomqMbySt1XqTec1PKqHqMnlbSws7+5nXhFzbTaNqlddkp/chkn/Si+/jLFK67JVUTYhkmqon9lCn/AM8ZsS3M6q7/AGJ+T+xRGwmmSLEqmpVujp6x3Hra1rUT+e8T8hGxJ+/gzG/qVUrfqX/7JufNNSbd3Uz2lXZpKhDHYQPafm9ZjVZS2+3U0ElRLFyz5J0VWtbqrURERU4qrV46/XwhvdXyb3Pa/wBy/wBM5tvMb25XRSq1dx9C1rV04KqSP1T/ANyfOV4dNp2n207aEpQTbKa8u60a0oqWEie91fJvc9r/AHL/AEx3V8m9z2v9y/0yBA3ebLT+NGry2v3me/l2V3PKO1fylHSs7V3+T5Bjm6727rrqq/qoS3YD+l7r8HZ9pSsyzNgP6Xuvwdn2lINSpQpWE4QWEvcls5yndRlJ5f4LfK/28+1Cj+MWfdSlgFf7efahR/GLPupTlNM6XT8y9vf2JeRSgAPoBygAABKwACwIoAAV4AABd/YdZDBa9oNdY6h7WNvFKiRKv+KaJVc1vytdIvyJ1muT+b1vq6q319PX0M76eqppWywysXRzHtXVrk8iobL2LbZrJm1DT266TwW3ImtRslO926ypd+tCq8+vPueyTjzomqy05dR0+i3sOBxE3h9RZ1zoKG50MtDcqKmraSVNJIKiJskb059Fa5FRSOrs22eL/kbGvktkKf8AiSoErSe8vpU4y+JZIp3NdnniNjf8Ni9E+ps32ep/kXGl8trhX/xJUDHBXYY4mn3V6EX7nWz7xExf+EwegerYsesFgbK2xWO2WpsyosqUVIyFHqnNruImvynpgyopdRlU4ReUgUn2YWRQW7ZxDj6PRaq8VTE3NeKRROSRzvpJGn/d7xYe0TPsawS1rWX2ua2ZzVWCjjVHTzr1Nb1a/wCJdETpVDEu0rM7rneVz366aRq5OTp6drtWU8SKu6xF6edVVelVVeHMnipLCwVWr3sKVJ0k/wC5/RE22CXONaS42Z7kSVsiVMaKvsmqiNdp5FRv0i0DMNjulZZbrBcqCRGTwu1TXijk6WqnSipwL/w/LbTktK1aWVIaxG6y0j3d+xenT9ZPfT5dOY4jW7GcKrrxWYvf4Mr9NuoygqTe1Hq3K3W+5RNiuNDTVbGrvNbPE16NXrTVOB0PUpjHi9avNGfgeyCkjWqRWIya+ZZOnFvLR43qUxjxetXmjPwHqUxjxetXmjPwPZB65RV7z9WY4qHdR43qUxjxetXmjPwO5bbParY977dbaSjc9NHrBC1iuTqXRDugxKtUksOT9TKpwTykCv8Abz7UKP4xZ91KWAV/t59qFH8Ys+6lNrTOl0/Mgvf2JeRSgAPoBygAABKwACwIoAAV4AAACoipoqIqdSkq2R41S5htHs2OVsssVLWSP5Z0Soj91kb5FRFXmVdzTX3yY5RjuH12zm9ZDYcNyCyrQVLI6SskqnVNPVtSbk5N/X2Cp9eiarxGMmzStZ1KbqJ7Fn6bWRCy7Ss/s0CQW/LrtHEiaNZJPyzWp1Ij97RPIej3ZNp/jjW/uovQODO8btdowDBb1RMlbV3qmqpKxXSK5qujkY1u6nRwcp3NieK4/f6+73TL5ZYMdtFKx1TJHJuLyssiMibr1L36/IhnbnBPHlSqKipv1eN2fscXdk2n+ONb+6i9Ad2Taf441v7qL0DmtuD2un28rgmRVj6K1suMsLplkRjli3HPhTeVNEV6cmn/AH8OJ622DDrBj2N9s0+I5HjlxZX8hEtTOlVS1cO6vfcq3VrXrpqjdeZF5+ht7T2lecCU3Uf9rw9r6jw+7JtP8ca391F6Bw1e1vaXVQuhlzK5o13PyStid9JjUVPnLJpdm2DR45aqhtgyS+UVXa21NXf7ZVNm7WnVqqrO126u71UTgqLoioi6qjlTPzVVWoq6a6dAeV1nm4d1QS4dR7fFnNWVNTWVUlXWVE1TUSrrJNNIr3vXrVy8V+U4i4NnmzWx3vZjLcLlJM3JLsytkx6Jsu62VtMxN5Fb0qr95PJop0Ng2GWXLqHKKq6Wm4XaW2U0EtJSUdRyUkrnrJq1F5tV3U5xgjVjVnKK723/ADt+RVx9Y5zHtexyte1dWuRdFRetFLCyygxPGc+ggveFZBbbV2gkklulr2rUPkVz92RHpwRvBE062qertjxvBcezqmw2xWq5w1kVbTJVVM1ZvxyQyNRVa1OdHd8nH3lMYMOzkk3wlseOv2ILS5llVLEkUV+rd1Obfeki/O5FU5vV3l/h2o+gz0S1dr2zWwYxZb3NbMEv0cVGjeSu8l1ifAmrmpvLHvb6p327ppz8ebifvENm+KVmKYVWVOH5Jeai/IqVlXQVDkho/wC1Rm/Jw0RNHa+RikDs6De2C9PwbXI7pT4vh7lne+3HYVP6u8v8O1H0GeiPV3l/h2o+gz0SYYzguLuy/O3XKorbhYMUhnlYymla2Wq3XqjGq/TTma7VUROOnMnAjGeOwCe1Wy4Yey4UFY9ZW3C21UjpkhRFTce2RWoi6prqmq9HBNF1xyO37kfREE43EIcKU/ll52PB1vV3l/h2o+gz0R6u8v8ADtR9Bnok82hbNLJYtmMNdRSTrk9qjop7/E+XVsTKpHI1Eb0Kj0ank4nLs/wfHK3ZXR5NWYhkWS3CouUtK6G1TuRY2NRVRyoiaInDTXrVDPIqH8a9F7Eit7rjOLc9uM72V96u8v8ADtR9BnonRvOSX280rKa6XKWqhY9JGse1qIjkRU14InQq/OWpbNmmLSdkLc8Ia6rr7TTUj5mRtqEbKkiRMfyavRETg5yp8yLxRSO7ZcWocbpbY6kwu8Y46ofIjnV9xiqUmRqN4NSNy7umvTz6mY2lGD4UYJNeB5qW9yqcpSlsTw9r6voVuACYrgAACVgAFgRQAArwAAD3cAyWpw/MbbktHBHUTUMiuSKRdGva5rmObqnNq1y8ehdF0XmJfeNpdhlw+/47YsEdZkvaxunl/Lk1S1jmS8pq2N7NE1XeTvVTnTn0RCswCenc1KcHCL2PwXXsZZVPtDxSqw6wY9k2z116WyRSRQVCXyWm1SRyOd3rGe83nVeY87E9pN2xPBZcexyJtFXVNf21V3F7Yp+WYjN1sPJSRq1ERUR2uqrrrzakGAyeuV1spp7cYzhJ+pYN62i0l92g2bL73itHcX0tFHTXOlnka6K4vaxzFlVu5oxe+RUbo5EVjeo5cqz3HJdncuEYjjFXaqCorW1k8lXcHVDkVqJo1iKne66Jx16F4LrqlcgGeWVcSTe/fsWdu8t3FNqOG47V0OQUGzztbJKSiSlWWluCw0s7t3ddI+NrdFVdVVUVF46cdURxUSqq6qumq9SaJ8wAI6txOqkpdXgkWvQbcL/aa3HYrHRxUNjs1LDTPtruSlWp3deUesyxb7HPRdO94Iqa6Lx18Cx57HZKTNaW22Z0EWTNRkKMrNFoGo97kRFRnf6I/T/DzEHAyyR3tdtNy3e2PsclXPUVblfU1Esz93d35Hq5UTq1Ulef5t6q9pT8yW2dp70lPJ2r2xyn5prU0391Ofd/V4a9JEACFVZpNJ9j9P8AZYm0POcNy2a53PudOor9Xqjvyj+XJZEjcm6mvJbiNXvW6acDjZtPuMNvwijo6eppI8XerpUir3NbXpyrJN1yI1N1O8VvHe9kvkWvwCV3lZycs7X4JdeepdpYdo2lQUuaZVeK3HW1tqyeOaKttq1ixq1sjt7vZWt11TV3HROfoXicF9zLF55sdpbNhEVBaLPVrUzQyVfKz1yq9HKySVWao3gqad9wXo0QgYGRyurweDn6Ltz9y1a/bdkF2qMkp77Sx19mvVLPTx0DUiidSb6pyb0mbFvSLGnBN7n5+BGUzu4Q7M6LDbe2qoJaW4yVq19PWOY56OY5vJ7rUTROKLrvLzcxEAMtiV5Xk8uXh6lns2sxptfrc/kxvlG1lH2rLQdvaf8ACbGruU5PqZ+r085EsvumIXCGlZjGFuxx0bnLO5brLV8siom6mj0Td048U59SOgN5MTuqs4uMnnLzuW9/IAAGuAAASsAAsCKAAFeAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASsAAsCKAAFeAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASsAAsCKAAFeAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASsAAsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACQAAG8f/9k=" alt="GA" style="height:32px;border-radius:4px"/>
+      <div>
+        <div class="app-header-title">FaçadeLog</div>
+        <div class="app-header-sub" id="dash-user-name">Glass Aftercare</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span id="admin-badge" class="hidden" style="background:rgba(255,200,0,.25);color:#ffd700;font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px;border:1px solid rgba(255,200,0,.4)">ADMIN</span>
+      <button onclick="doLogout()" style="background:rgba(255,255,255,.15);border:none;color:#fff;font-size:11px;font-weight:600;padding:6px 12px;border-radius:20px">Sign Out</button>
+    </div>
+  </div>
+  <div class="scroll-area">
+    <div style="padding:16px 16px 8px;display:flex;justify-content:space-between;align-items:center;gap:8px">
+      <div style="min-width:0">
+        <div style="font-size:17px;font-weight:700">My Surveys</div>
+        <div id="dash-count" style="font-size:12px;color:var(--muted);margin-top:2px"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0">
+        <div id="admin-toggle-wrap" class="hidden">
+          <button id="admin-toggle-btn" onclick="toggleAdminView()" style="padding:8px 12px;border-radius:20px;border:1.5px solid var(--border);background:#fff;color:var(--muted);font-family:'Inter',sans-serif;font-size:11px;font-weight:600">👁 All Staff</button>
+        </div>
+        <button class="btn btn-accent" style="width:auto;padding:10px 18px;font-size:13px" onclick="showNewSurveyModal()">+ New</button>
+      </div>
+    </div>
+    <div id="dash-list" style="padding:8px 16px 32px;display:flex;flex-direction:column;gap:10px"></div>
+    <div id="dash-empty" class="hidden" style="padding:48px 32px;text-align:center">
+      <div style="font-size:48px;margin-bottom:16px">🏗️</div>
+      <div style="font-size:16px;font-weight:700;margin-bottom:8px">No surveys yet</div>
+      <p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:20px">Start your first facade condition survey.</p>
+      <button class="btn btn-accent" style="max-width:200px;margin:0 auto" onclick="showNewSurveyModal()">+ New Survey</button>
+    </div>
+    <div id="dash-loading" style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Loading surveys…</div>
+  </div>
+</div>
+
+<!-- NEW SURVEY MODAL -->
+<div id="new-survey-modal" class="modal-backdrop hidden">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title">🏗️ New Survey</span>
+      <button class="modal-close" onclick="closeNewSurveyModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div><div class="field-lbl">Project / Building Name</div><input id="new-name" class="input-field" placeholder="e.g. 14 High Street — South Elevation"/></div>
+      <div><div class="field-lbl">Surveyor Name</div><input id="new-surveyor" class="input-field" placeholder="e.g. J. Smith MRICS"/></div>
+      <button class="btn btn-accent" id="create-survey-btn" onclick="createNewSurvey()">Create Survey →</button>
+    </div>
+  </div>
+</div>
+
+<!-- SURVEY APP -->
+<div id="screen-app" class="screen hidden">
+  <!-- SURVEY TAB -->
+  <div id="tab-survey" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0">
+    <div class="app-header" style="justify-content:space-between">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button onclick="backToDashboard()" style="background:rgba(255,255,255,.18);border:none;color:#fff;font-size:20px;line-height:1;padding:3px 9px;border-radius:8px">‹</button>
+        <div>
+          <div class="app-header-title" id="app-survey-name" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+          <div class="app-header-sub" id="app-survey-type-lbl">Condition Survey</div>
+        </div>
+      </div>
+      <img src="data:image/jpeg;base64,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" alt="GA" style="height:30px;border-radius:4px"/>
+    </div>
+    <!-- Completed works banner -->
+    <div id="completed-banner" class="completed-banner hidden">
+      <span style="font-size:16px">✅</span>
+      <span style="color:#fff;font-size:12px;font-weight:600">Completed Works Survey — tap defects to add after photos</span>
+    </div>
+    <div class="survey-bar">
+      <div>
+        <div style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.1em;font-weight:600">Survey</div>
+        <div id="survey-proj-name" style="color:var(--text);font-size:13px;font-weight:600;margin-top:1px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></div>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="survey-tag-count" style="color:var(--muted);font-size:11px;font-weight:500">0 tags</span>
+        <button id="add-mode-btn" class="tag-btn inactive">+ Tag</button>
+      </div>
+    </div>
+    <div id="add-mode-banner" class="hidden" style="padding:9px 16px;background:var(--green-lt);border-bottom:1.5px solid #b8d8c4;display:flex;align-items:center;gap:8px;flex-shrink:0">
+      <span style="color:var(--green);font-size:14px">📍</span>
+      <span style="color:var(--green);font-size:12px;font-weight:500">Tap anywhere on the elevation to place a defect tag</span>
+    </div>
+    <div id="no-elevation" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;gap:16px;text-align:center">
+      <span style="font-size:44px">🏢</span>
+      <p style="color:var(--muted);font-size:13px;line-height:1.6">No elevation drawing set yet.<br>Head to Setup to upload or sketch one.</p>
+      <button class="btn btn-accent" style="max-width:200px" onclick="switchTab('setup')">Go to Setup →</button>
+    </div>
+    <div id="survey-canvas-wrap" class="hidden" style="flex:1;overflow:auto;background:#e8ede9;display:flex;align-items:flex-start;justify-content:center;padding:16px">
+      <div id="pin-container" style="position:relative;display:inline-block;max-width:100%">
+        <img id="elevation-img" src="" alt="elevation" draggable="false" style="display:block;max-width:100%;max-height:60dvh;border-radius:8px;user-select:none;border:1.5px solid var(--border)"/>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEFECTS TAB -->
+  <div id="tab-defects" class="hidden scroll-area" style="display:flex;flex-direction:column">
+    <div class="section-hdr" style="background:var(--green-dk)"><div class="section-hdr-lbl" style="color:rgba(255,255,255,.6)">Defect Summary</div></div>
+    <div class="summary-grid" id="summary-grid"></div>
+    <div style="padding:0 16px 12px;display:flex;flex-direction:column;gap:8px">
+      <button class="export-btn" id="export-btn" onclick="exportPDF()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Survey Report (PDF)
+      </button>
+    </div>
+    <div id="defect-list" style="padding:0 16px 24px;display:flex;flex-direction:column;gap:8px"></div>
+    <div id="no-defects" class="hidden" style="padding:40px;text-align:center;color:var(--muted);font-size:13px;line-height:1.7">No defects tagged yet.<br>Go to Survey tab and tap + Tag to begin.</div>
+  </div>
+
+  <!-- SETUP TAB -->
+  <div id="tab-setup" class="hidden scroll-area">
+    <div class="section-hdr" style="background:var(--green-dk)"><div class="section-hdr-lbl" style="color:rgba(255,255,255,.6)">Survey Setup</div></div>
+    <div style="padding:16px 16px 32px;display:flex;flex-direction:column;gap:0">
+      <div style="margin-bottom:20px">
+        <div class="field-lbl">Project / Building Name</div>
+        <div style="display:flex;gap:8px">
+          <input id="setup-name" class="input-field" style="flex:1" placeholder="e.g. 14 High Street"/>
+          <button onclick="saveName()" style="padding:10px 16px;border-radius:10px;border:none;background:var(--green);color:#fff;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">Save</button>
+        </div>
+      </div>
+      <div style="margin-bottom:24px">
+        <div class="field-lbl">Surveyor Name</div>
+        <input id="setup-surveyor" class="input-field" placeholder="e.g. J. Smith MRICS" oninput="saveSurveyor()"/>
+      </div>
+      <div class="field-lbl">Elevation Drawing</div>
+      <div id="elev-preview-wrap" class="hidden" style="margin-bottom:12px;position:relative">
+        <img id="elev-preview" src="" style="width:100%;max-height:160px;object-fit:contain;background:var(--green-lt);border-radius:10px;border:1.5px solid var(--border)"/>
+        <div style="position:absolute;top:8px;right:8px;background:var(--green);color:#fff;font-size:10px;font-weight:700;padding:3px 10px;border-radius:12px">✓ Set</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+        <button class="action-row" onclick="document.getElementById('file-drawing').click()"><span>🗂️</span> Upload CAD drawing / screenshot</button>
+        <button class="action-row" onclick="document.getElementById('file-photo').click()"><span>📸</span> Take photo of facade</button>
+        <button class="action-row" onclick="showDrawCanvas()"><span>✏️</span> Sketch building outline</button>
+      </div>
+      <input id="file-drawing" type="file" accept="image/*" style="display:none" onchange="handleElevUpload(event)"/>
+      <input id="file-photo" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleElevUpload(event)"/>
+
+      <!-- Convert to Completed Works -->
+      <div id="convert-section" style="margin-top:24px;padding:16px;background:var(--complete-lt);border:1.5px solid #b8d0e8;border-radius:12px">
+        <div style="font-size:13px;font-weight:700;color:var(--complete);margin-bottom:6px">✅ Completed Works</div>
+        <p style="font-size:12px;color:#2a4a6a;line-height:1.5;margin-bottom:12px">Convert this survey into a completed works record. You'll be able to add after photos to each defect, and the PDF will show before &amp; after side by side.</p>
+        <button id="convert-btn" onclick="convertToCompleted()" class="btn-outline-complete">Convert to Completed Works Survey →</button>
+      </div>
+      <div id="completed-section" class="hidden" style="margin-top:24px;padding:16px;background:#e6f4e6;border:1.5px solid #a8d8a8;border-radius:12px">
+        <div style="font-size:13px;font-weight:700;color:#1a6b2a;margin-bottom:4px">✅ This is a Completed Works Survey</div>
+        <p style="font-size:12px;color:#1a4a1a;line-height:1.5">Go to the Defects tab to add after photos to each defect.</p>
+      </div>
+
+      <div style="margin-top:24px;padding-top:20px;border-top:1.5px solid var(--border)">
+        <button class="btn btn-danger" onclick="deleteSurvey()">🗑️ Delete This Survey</button>
+      </div>
+    </div>
+  </div>
+
+  <nav id="bottom-nav">
+    <button class="nav-btn active" data-tab="survey" onclick="switchTab('survey')"><span>🗺️</span><span>Survey</span></button>
+    <button class="nav-btn" data-tab="defects" onclick="switchTab('defects')"><span>📋</span><span>Defects</span></button>
+    <button class="nav-btn" data-tab="setup" onclick="switchTab('setup')"><span>⚙️</span><span>Setup</span></button>
+  </nav>
+</div>
+
+<!-- DRAW SCREEN -->
+<div id="screen-draw" class="screen hidden" style="flex-direction:column">
+  <div style="padding:12px 16px;display:flex;gap:8px;flex-wrap:wrap;background:#fff;border-bottom:1.5px solid var(--border);flex-shrink:0">
+    <button id="tool-pen" onclick="setTool('pen')" style="padding:8px 14px;border-radius:8px;border:none;background:var(--green);color:#fff;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">✏️ Pen</button>
+    <button id="tool-eraser" onclick="setTool('eraser')" style="padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-family:'Inter',sans-serif;font-size:12px;font-weight:500">⬜ Eraser</button>
+    <button onclick="clearCanvas()" style="padding:8px 14px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-family:'Inter',sans-serif;font-size:12px;font-weight:500">🗑️ Clear</button>
+  </div>
+  <div style="flex:1;overflow:auto;padding:12px;display:flex;justify-content:center;background:var(--bg)">
+    <canvas id="draw-canvas" width="700" height="420"></canvas>
+  </div>
+  <div style="padding:12px 16px;display:flex;gap:8px;background:#fff;border-top:1.5px solid var(--border);flex-shrink:0">
+    <button class="btn btn-ghost" style="flex:1" onclick="hideDrawCanvas()">Cancel</button>
+    <button class="btn btn-accent" style="flex:2" onclick="saveDrawing()">Use This Drawing →</button>
+  </div>
+</div>
+
+<!-- DEFECT MODAL -->
+<div id="defect-modal" class="modal-backdrop hidden">
+  <div class="modal-sheet" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <span class="modal-title" id="modal-title">📍 Tag Defect</span>
+      <button class="modal-close" onclick="closeDefectModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div><div class="field-lbl">Reference No.</div><input id="df-ref" class="input-field" placeholder="e.g. NE-01" style="width:100%"/></div>
+
+      <!-- BEFORE PHOTO -->
+      <div>
+        <div class="field-lbl" id="before-photo-lbl">Photo</div>
+        <div id="df-photo-wrap"></div>
+        <input id="df-photo-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleDefectPhoto(event,'before')"/>
+      </div>
+
+      <!-- AFTER PHOTO (completed works only) -->
+      <div id="after-photo-section" class="hidden">
+        <div class="field-lbl">After Photo</div>
+        <div id="df-after-photo-wrap"></div>
+        <input id="df-after-photo-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleDefectPhoto(event,'after')"/>
+        <div style="margin-top:10px">
+          <div class="field-lbl">After Notes</div>
+          <textarea id="df-after-notes" class="input-field" rows="2" placeholder="Works carried out, materials used..." style="width:100%;resize:none;line-height:1.5"></textarea>
+        </div>
+      </div>
+
+      <div id="defect-type-sev-section">
+        <div><div class="field-lbl">Defect Type</div><div class="type-grid" id="type-grid"></div></div>
+        <div><div class="field-lbl">Severity</div><div class="sev-grid" id="sev-grid"></div></div>
+      </div>
+
+      <div><div class="field-lbl">Notes / Description</div><textarea id="df-notes" class="input-field" rows="3" placeholder="Describe extent, location, observations..." style="width:100%;resize:none;line-height:1.5"></textarea></div>
+      <div style="display:flex;gap:8px">
+        <button id="df-delete-btn" class="btn btn-danger" style="display:none;flex:0 0 auto;padding:13px 18px" onclick="deleteDefect()">Delete</button>
+        <button class="btn btn-accent" id="df-save-btn" onclick="saveDefect()">Tag Defect ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL MODAL -->
+<div id="detail-modal" class="modal-backdrop hidden" onclick="closeDetailModal()">
+  <div class="modal-sheet" onclick="event.stopPropagation()" id="detail-sheet">
+    <div class="modal-header">
+      <span class="modal-title" id="detail-title"></span>
+      <div style="display:flex;gap:8px;align-items:center">
+        <button id="detail-edit-btn" style="padding:6px 14px;border-radius:8px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-family:'Inter',sans-serif;font-size:11px;font-weight:700;cursor:pointer">Edit</button>
+        <button class="modal-close" onclick="closeDetailModal()">✕</button>
+      </div>
+    </div>
+    <div style="padding:16px 20px 20px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap" id="detail-badges"></div>
+      <!-- Before/after photos -->
+      <div id="detail-photos-row" style="display:none;gap:8px"></div>
+      <!-- Single photo (no after) -->
+      <img id="detail-photo" src="" style="width:100%;max-height:300px;object-fit:cover;border-radius:12px;display:none;border:1.5px solid var(--border)"/>
+      <p id="detail-notes" style="color:var(--dim);font-size:13px;line-height:1.7;display:none"></p>
+      <p id="detail-after-notes" style="color:#1a5a8a;font-size:13px;line-height:1.7;display:none;background:var(--complete-lt);padding:10px 12px;border-radius:8px"></p>
+      <p id="detail-date" style="color:var(--muted);font-size:10px"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+const LOGO_DATA="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";
+const TYPES=["Cracking","Spalling / Delamination","Staining / Efflorescence","Corrosion / Rust","Failed Pointing","Failed Sealant","Damp / Water Ingress","Vegetation Growth","Impact Damage","Window / Door Defect","Render Failure","Other"];
+const SEVS=[
+  {id:"low",   label:"Low",     sub:"Monitor only",     colV:"var(--low)", ltV:"var(--low-lt)", hex:"#1a6b2a",pdfRgb:[26,107,42]},
+  {id:"medium",label:"Medium",  sub:"Maintenance req.", colV:"var(--med)", ltV:"var(--med-lt)", hex:"#b45309",pdfRgb:[180,83,9]},
+  {id:"high",  label:"High",    sub:"Urgent attention", colV:"var(--high)",ltV:"var(--high-lt)",hex:"#c0392b",pdfRgb:[192,57,43]},
+  {id:"critical",label:"Critical",sub:"Immediate action",colV:"var(--crit)",ltV:"var(--crit-lt)",hex:"#7b2d8b",pdfRgb:[123,45,139]}
+];
+const SEV_HEX={low:"#1a6b2a",medium:"#b45309",high:"#c0392b",critical:"#7b2d8b"};
+
+let db=null,auth=null,currentUser=null,currentSurvey=null,isAdmin=false,adminViewAll=false;
+let surveysUnsubscribe=null;
+let addMode=false,pendingPin=null,editingId=null,currentDefectPhoto=null,currentAfterPhoto=null;
+let selectedType=TYPES[0],selectedSev="medium",drawTool="pen",isDrawing=false,canvasInited=false;
+// Annotator state
+let annTool="pen",annColor="#ff3b30",annHistory=[],annStartX=0,annStartY=0,annDrawing=false,annImg=null,annCallback=null;
+
+/* ── Utils ── */
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function compress(dataUrl,maxW=600,q=0.55){return new Promise(res=>{const img=new Image();img.onload=()=>{const r=Math.min(1,maxW/Math.max(img.width,img.height));const c=document.createElement("canvas");c.width=Math.round(img.width*r);c.height=Math.round(img.height*r);c.getContext("2d").drawImage(img,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",q));};img.src=dataUrl;});}
+function compressElev(d){return compress(d,900,0.65);}
+function showToast(msg,dur=2800){const t=document.getElementById("toast");t.textContent=msg;t.style.opacity="1";setTimeout(()=>t.style.opacity="0",dur);}
+function showScreen(id){["screen-auth","screen-dashboard","screen-app","screen-draw"].forEach(s=>{const el=document.getElementById(s);if(el)el.classList.toggle("hidden",s!==id);});document.getElementById("loading-overlay").style.display="none";}
+function loading(show,msg="Saving…"){const ov=document.getElementById("loading-overlay");ov.style.display=show?"flex":"none";if(msg)ov.querySelector("div:last-child").textContent=msg;}
+
+/* ── Firebase init ── */
+function initFirebase(cfg){
+  try{
+    if(firebase.apps.length)firebase.apps.forEach(a=>a.delete().catch(()=>{}));
+    firebase.initializeApp(cfg);
+    db=firebase.firestore();auth=firebase.auth();
+    db.enablePersistence({synchronizeTabs:true}).catch(()=>{});
+    auth.onAuthStateChanged(async user=>{
+      document.getElementById("loading-overlay").style.display="none";
+      if(user){currentUser=user;await checkAdminStatus();showDashboard();}
+      else{showScreen("screen-auth");}
+    });
+  }catch(e){showToast("Firebase error: "+e.message,5000);showScreen("screen-auth");}
+}
+
+/* ── Admin ── */
+async function checkAdminStatus(){
+  try{
+    const userDocRef=db.collection("users").doc(currentUser.uid);
+    const doc=await userDocRef.get();
+    if(doc.exists&&doc.data().role){
+      isAdmin=doc.data().role==="admin";
+    }else{
+      // No role set yet — check if any admin exists
+      let role="user";
+      try{
+        const admins=await db.collection("users").where("role","==","admin").get();
+        if(admins.empty)role="admin"; // First admin
+      }catch(e){
+        // If query fails, check if this is the only user
+        const all=await db.collection("users").get();
+        if(all.empty||all.size===0)role="admin";
+      }
+      await userDocRef.set({name:currentUser.displayName||currentUser.email,email:currentUser.email,role,created:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});
+      isAdmin=role==="admin";
+      if(role==="admin")showToast("👑 Admin account activated");
+    }
+  }catch(e){console.warn("Admin check failed:",e);isAdmin=false;}
+}
+
+// Manual admin grant — call grantAdmin("email@example.com") from console if needed
+async function grantAdmin(email){
+  if(!isAdmin){showToast("Only admins can grant admin access.");return;}
+  try{
+    const users=await db.collection("users").where("email","==",email).get();
+    if(users.empty){showToast("User not found: "+email);return;}
+    await users.docs[0].ref.update({role:"admin"});
+    showToast("✓ Admin granted to "+email);
+  }catch(e){showToast("Error: "+e.message);}
+}
+
+function toggleAdminView(){
+  adminViewAll=!adminViewAll;
+  document.getElementById("admin-toggle-btn").textContent=adminViewAll?"👤 My Surveys":"👁 All Staff";
+  document.getElementById("admin-toggle-btn").style.color=adminViewAll?var_green:"var(--muted)";
+  document.getElementById("admin-toggle-btn").style.borderColor=adminViewAll?"var(--green)":"var(--border)";
+  resubscribeSurveys();
+}
+const var_green="var(--green)";
+
+/* ── Auth ── */
+function showAuthTab(tab){document.getElementById("auth-login").classList.toggle("hidden",tab!=="login");document.getElementById("auth-register").classList.toggle("hidden",tab!=="register");document.getElementById("tab-login-btn").classList.toggle("active",tab==="login");document.getElementById("tab-register-btn").classList.toggle("active",tab==="register");}
+
+async function doRegister(){
+  const name=document.getElementById("reg-name").value.trim(),email=document.getElementById("reg-email").value.trim(),pw=document.getElementById("reg-password").value;
+  const err=document.getElementById("reg-error");err.style.display="none";
+  if(!name||!email||!pw){err.textContent="Please fill in all fields.";err.style.display="block";return;}
+  if(pw.length<6){err.textContent="Password must be at least 6 characters.";err.style.display="block";return;}
+  const btn=document.getElementById("register-btn");btn.disabled=true;btn.textContent="Creating…";
+  try{const cred=await auth.createUserWithEmailAndPassword(email,pw);await cred.user.updateProfile({displayName:name});currentUser=cred.user;}
+  catch(e){err.textContent=friendlyErr(e);err.style.display="block";btn.disabled=false;btn.textContent="Create Account →";}
+}
+
+async function doLogin(){
+  const email=document.getElementById("login-email").value.trim(),pw=document.getElementById("login-password").value;
+  const err=document.getElementById("login-error");err.style.display="none";
+  if(!email||!pw){err.textContent="Please enter your email and password.";err.style.display="block";return;}
+  const btn=document.getElementById("login-btn");btn.disabled=true;btn.textContent="Signing in…";
+  try{await auth.signInWithEmailAndPassword(email,pw);}
+  catch(e){err.textContent=friendlyErr(e);err.style.display="block";btn.disabled=false;btn.textContent="Sign In →";}
+}
+
+function friendlyErr(e){
+  const m={
+    "auth/user-not-found":"No account found with this email.",
+    "auth/wrong-password":"Incorrect password.",
+    "auth/invalid-credential":"Incorrect email or password.",
+    "auth/email-already-in-use":"An account already exists with this email.",
+    "auth/invalid-email":"Please enter a valid email address.",
+    "auth/network-request-failed":"No internet connection."
+  };
+  return m[e.code]||e.message||"Something went wrong.";
+}
+
+async function doLogout(){
+  if(!confirm("Sign out?"))return;
+  if(surveysUnsubscribe){surveysUnsubscribe();surveysUnsubscribe=null;}
+  await auth.signOut();currentUser=null;currentSurvey=null;isAdmin=false;adminViewAll=false;
+}
+
+/* ── Firestore helpers ── */
+function surveysRef(){
+  if(isAdmin&&adminViewAll)return db.collection("surveys");
+  return db.collection("surveys").where("userId","==",currentUser.uid);
+}
+function surveyRef(id){return db.collection("surveys").doc(id);}
+function mediaRef(sid,key){return db.collection("surveys").doc(sid).collection("media").doc(key);}
+
+/* ── Dashboard ── */
+function showDashboard(){
+  showScreen("screen-dashboard");
+  document.getElementById("dash-user-name").textContent=currentUser.displayName||currentUser.email;
+  document.getElementById("admin-badge").classList.toggle("hidden",!isAdmin);
+  document.getElementById("admin-toggle-wrap").classList.toggle("hidden",!isAdmin);
+  document.getElementById("dash-loading").style.display="block";
+  document.getElementById("dash-list").innerHTML="";
+  document.getElementById("dash-empty").classList.add("hidden");
+  resubscribeSurveys();
+}
+
+function resubscribeSurveys(){
+  if(surveysUnsubscribe){surveysUnsubscribe();surveysUnsubscribe=null;}
+  surveysUnsubscribe=surveysRef().onSnapshot(snap=>{
+    document.getElementById("dash-loading").style.display="none";
+    const surveys=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{
+      const ta=a.updated?.toDate?a.updated.toDate():new Date(a.updated||0);
+      const tb=b.updated?.toDate?b.updated.toDate():new Date(b.updated||0);
+      return tb-ta;
+    });
+    renderDashboard(surveys);
+  },err=>{
+    document.getElementById("dash-loading").innerHTML=`<div style="padding:20px;color:#c0392b;font-size:13px;background:#fce8e6;border-radius:10px;margin:16px">⚠️ Error loading surveys.<br><br>${err.message}</div>`;
+  });
+}
+
+function renderDashboard(surveys){
+  const list=document.getElementById("dash-list"),empty=document.getElementById("dash-empty");
+  document.getElementById("dash-count").textContent=surveys.length===0?"No surveys yet":surveys.length===1?"1 survey":surveys.length+" surveys";
+  list.innerHTML="";
+  if(!surveys.length){empty.classList.remove("hidden");return;}
+  empty.classList.add("hidden");
+  surveys.forEach(s=>{
+    const el=document.createElement("div");el.className="survey-hist-card";
+    const updated=s.updated?.toDate?s.updated.toDate():new Date(s.updated||s.created);
+    const dateStr=updated.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"});
+    const isCompleted=s.surveyType==="completed";
+    const sevCounts=s.sevCounts||{};
+    const sevBadges=SEVS.map(sv=>{const c=sevCounts[sv.id]||0;return c>0?`<span style="background:${sv.ltV};color:${sv.hex};font-size:10px;font-weight:700;padding:3px 8px;border-radius:12px">${c} ${sv.label}</span>`:""}).join("");
+    const adminInfo=isAdmin&&adminViewAll&&s.surveyor?`<span style="font-size:10px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:10px;border:1px solid var(--border)">${s.surveyor}</span>`:"";
+    el.innerHTML=`
+      <div style="padding:14px 16px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+          <div style="min-width:0;flex:1">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              ${isCompleted?`<span style="background:var(--complete-lt);color:var(--complete);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">✅ Completed</span>`:`<span style="background:var(--green-lt);color:var(--green);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px">📋 Survey</span>`}
+              ${adminInfo}
+            </div>
+            <div style="font-size:14px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:4px">${s.name}</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;font-weight:500">${s.surveyor?s.surveyor+" · ":""}${dateStr}</div>
+          </div>
+          <div style="flex-shrink:0;background:var(--green-lt);color:var(--green);font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;white-space:nowrap">${s.defectCount||0} defect${(s.defectCount||0)===1?"":"s"}</div>
+        </div>
+        ${sevBadges?`<div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">${sevBadges}</div>`:""}
+      </div>
+      <div style="background:var(--bg);padding:10px 16px;display:flex;gap:8px;border-top:1.5px solid var(--border)">
+        <button onclick="event.stopPropagation();openSurvey('${s.id}')" style="flex:1;padding:9px;border-radius:8px;border:none;background:var(--green);color:#fff;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">Open</button>
+        <button onclick="event.stopPropagation();confirmDeleteSurvey('${s.id}','${(s.name||"").replace(/'/g,"")}')" style="padding:9px 14px;border-radius:8px;border:1.5px solid #f5c6c2;background:#fce8e6;color:#c0392b;font-family:'Inter',sans-serif;font-size:12px;font-weight:700">Delete</button>
+      </div>`;
+    list.appendChild(el);
+  });
+}
+
+function showNewSurveyModal(){document.getElementById("new-surveyor").value=currentUser.displayName||"";document.getElementById("new-name").value="";document.getElementById("new-survey-modal").classList.remove("hidden");setTimeout(()=>document.getElementById("new-name").focus(),120);}
+function closeNewSurveyModal(){document.getElementById("new-survey-modal").classList.add("hidden");}
+
+async function createNewSurvey(){
+  const name=document.getElementById("new-name").value.trim(),surveyor=document.getElementById("new-surveyor").value.trim();
+  if(!name){showToast("Please enter a project name.");return;}
+  const btn=document.getElementById("create-survey-btn");btn.disabled=true;btn.textContent="Creating…";
+  try{
+    const now=firebase.firestore.FieldValue.serverTimestamp();
+    const ref=await db.collection("surveys").add({userId:currentUser.uid,name,surveyor,defects:[],defectCount:0,sevCounts:{},surveyType:"active",hasElevation:false,created:now,updated:now});
+    currentSurvey={id:ref.id,name,surveyor,defects:[],elevation:null,surveyType:"active",created:new Date().toISOString(),updated:new Date().toISOString()};
+    closeNewSurveyModal();openSurveyApp();
+  }catch(e){showToast("Error: "+e.message);}
+  finally{btn.disabled=false;btn.textContent="Create Survey →";}
+}
+
+async function openSurvey(id){
+  loading(true,"Loading survey…");
+  try{
+    const doc=await surveyRef(id).get();if(!doc.exists){showToast("Survey not found.");loading(false);return;}
+    const data={id:doc.id,...doc.data()};
+    let elevation=null;try{const em=await mediaRef(id,"elevation").get();if(em.exists)elevation=em.data().data;}catch{}
+    const defects=(data.defects||[]);
+    for(const d of defects){
+      try{const pm=await mediaRef(id,"photo_"+d.id).get();if(pm.exists)d.photo=pm.data().data;}catch{d.photo=null;}
+      try{const am=await mediaRef(id,"after_"+d.id).get();if(am.exists)d.afterPhoto=am.data().data;}catch{d.afterPhoto=null;}
+    }
+    currentSurvey={...data,elevation,defects};openSurveyApp();
+  }catch(e){showToast("Error loading: "+e.message);loading(false);}
+}
+
+async function confirmDeleteSurvey(id,name){
+  if(!confirm(`Delete "${name}"?\nThis cannot be undone.`))return;
+  loading(true,"Deleting…");
+  try{
+    const mediaDocs=await db.collection("surveys").doc(id).collection("media").get();
+    const batch=db.batch();mediaDocs.forEach(d=>batch.delete(d.ref));batch.delete(surveyRef(id));
+    await batch.commit();showToast("Survey deleted.");
+  }catch(e){showToast("Error: "+e.message);}
+  finally{loading(false);}
+}
+
+/* ── Survey App ── */
+function openSurveyApp(){
+  const isCompleted=currentSurvey.surveyType==="completed";
+  showScreen("screen-app");switchTab("survey");
+  document.getElementById("app-survey-name").textContent=currentSurvey.name;
+  document.getElementById("app-survey-type-lbl").textContent=isCompleted?"Completed Works":"Condition Survey";
+  document.getElementById("survey-proj-name").textContent=currentSurvey.name;
+  document.getElementById("setup-name").value=currentSurvey.name;
+  document.getElementById("setup-surveyor").value=currentSurvey.surveyor||"";
+  document.getElementById("completed-banner").classList.toggle("hidden",!isCompleted);
+  document.getElementById("convert-section").classList.toggle("hidden",isCompleted);
+  document.getElementById("completed-section").classList.toggle("hidden",!isCompleted);
+  // In completed mode, don't allow new tags
+  document.getElementById("add-mode-btn").style.display=isCompleted?"none":"";
+  if(currentSurvey.elevation){
+    document.getElementById("elevation-img").src=currentSurvey.elevation;
+    document.getElementById("no-elevation").classList.add("hidden");
+    document.getElementById("survey-canvas-wrap").classList.remove("hidden");
+    document.getElementById("elev-preview").src=currentSurvey.elevation;
+    document.getElementById("elev-preview-wrap").classList.remove("hidden");
+  }else{
+    document.getElementById("no-elevation").classList.remove("hidden");
+    document.getElementById("survey-canvas-wrap").classList.add("hidden");
+    document.getElementById("elev-preview-wrap").classList.add("hidden");
+  }
+  renderPins();renderDefectList();
+}
+
+function backToDashboard(){if(addMode)toggleAddMode(false);showScreen("screen-dashboard");}
+function switchTab(tab){["survey","defects","setup"].forEach(t=>{document.getElementById("tab-"+t).classList.toggle("hidden",t!==tab);document.querySelector(`[data-tab="${t}"]`).classList.toggle("active",t===tab);});if(tab!=="survey"&&addMode)toggleAddMode(false);}
+function saveName(){const n=document.getElementById("setup-name").value.trim();if(!n)return;currentSurvey.name=n;document.getElementById("survey-proj-name").textContent=n;document.getElementById("app-survey-name").textContent=n;persistSurvey();}
+function saveSurveyor(){currentSurvey.surveyor=document.getElementById("setup-surveyor").value.trim();persistSurvey();}
+
+async function convertToCompleted(){
+  if(!confirm("Convert this survey to a Completed Works Survey?\n\nYou'll be able to add after photos to each defect. This cannot be undone."))return;
+  currentSurvey.surveyType="completed";
+  currentSurvey.completedDate=new Date().toISOString();
+  await persistSurvey();
+  openSurveyApp();
+  switchTab("defects");
+  showToast("✅ Converted to Completed Works Survey");
+}
+
+async function handleElevUpload(e){
+  const f=e.target.files?.[0];if(!f)return;
+  loading(true,"Processing image…");
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    const c=await compressElev(ev.target.result);currentSurvey.elevation=c;
+    document.getElementById("elevation-img").src=c;document.getElementById("elev-preview").src=c;
+    document.getElementById("elev-preview-wrap").classList.remove("hidden");
+    document.getElementById("no-elevation").classList.add("hidden");
+    document.getElementById("survey-canvas-wrap").classList.remove("hidden");
+    renderPins();loading(true,"Saving to cloud…");
+    await persistSurvey({elevation:c});loading(false);showToast("✓ Elevation saved");
+  };reader.readAsDataURL(f);e.target.value="";
+}
+
+async function deleteSurvey(){
+  if(!confirm("Delete this entire survey?"))return;
+  loading(true,"Deleting…");
+  await confirmDeleteSurvey(currentSurvey.id,currentSurvey.name);
+  currentSurvey=null;showScreen("screen-dashboard");loading(false);
+}
+
+/* ── Persist ── */
+async function persistSurvey(extraMedia={}){
+  if(!currentSurvey||!db)return;
+  try{
+    const sevCounts={};SEVS.forEach(s=>{sevCounts[s.id]=(currentSurvey.defects||[]).filter(d=>d.severity===s.id).length;});
+    const defectsStripped=(currentSurvey.defects||[]).map(({photo,afterPhoto,...d})=>d);
+    const now=firebase.firestore.FieldValue.serverTimestamp();
+    const batch=db.batch();
+    batch.set(surveyRef(currentSurvey.id),{userId:currentUser.uid,name:currentSurvey.name,surveyor:currentSurvey.surveyor||"",defects:defectsStripped,defectCount:(currentSurvey.defects||[]).length,sevCounts,surveyType:currentSurvey.surveyType||"active",completedDate:currentSurvey.completedDate||null,hasElevation:!!currentSurvey.elevation,created:currentSurvey.created,updated:now},{merge:true});
+    for(const[key,data] of Object.entries(extraMedia)){
+      if(data)batch.set(mediaRef(currentSurvey.id,key),{data});
+      else batch.delete(mediaRef(currentSurvey.id,key));
+    }
+    await batch.commit();
+  }catch(e){showToast("Sync error: "+e.message,4000);}
+}
+
+/* ── Draw canvas ── */
+function showDrawCanvas(){showScreen("screen-draw");initCanvas();}
+function hideDrawCanvas(){showScreen("screen-app");}
+function initCanvas(){const c=document.getElementById("draw-canvas");const ctx=c.getContext("2d");ctx.fillStyle="#f8f8f6";ctx.fillRect(0,0,c.width,c.height);ctx.strokeStyle="#d4ddd6";ctx.lineWidth=.5;for(let x=0;x<=c.width;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,c.height);ctx.stroke();}for(let y=0;y<=c.height;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(c.width,y);ctx.stroke();}if(!canvasInited){canvasInited=true;["mousedown","touchstart"].forEach(ev=>c.addEventListener(ev,canvasStart,{passive:false}));["mousemove","touchmove"].forEach(ev=>c.addEventListener(ev,canvasDraw,{passive:false}));["mouseup","mouseleave","touchend","touchcancel"].forEach(ev=>c.addEventListener(ev,canvasEnd,{passive:false}));}}
+function canvasPos(e,c){const r=c.getBoundingClientRect();const t=e.touches?.[0]||e.changedTouches?.[0]||e;const s=c.width/r.width;return{x:(t.clientX-r.left)*s,y:(t.clientY-r.top)*s};}
+function canvasStart(e){e.preventDefault();isDrawing=true;const p=canvasPos(e,this);const ctx=this.getContext("2d");ctx.beginPath();ctx.moveTo(p.x,p.y);}
+function canvasDraw(e){e.preventDefault();if(!isDrawing)return;const p=canvasPos(e,this);const ctx=this.getContext("2d");ctx.strokeStyle=drawTool==="eraser"?"#f8f8f6":"#1a2820";ctx.lineWidth=drawTool==="eraser"?24:2.5;ctx.lineCap="round";ctx.lineJoin="round";ctx.lineTo(p.x,p.y);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x,p.y);}
+function canvasEnd(e){e.preventDefault();isDrawing=false;}
+function setTool(t){drawTool=t;document.getElementById("tool-pen").style.cssText=t==="pen"?"background:var(--green);color:#fff;border:none":"background:#fff;color:var(--text);border:1.5px solid var(--border)";document.getElementById("tool-eraser").style.cssText=t==="eraser"?"background:var(--green);color:#fff;border:none":"background:#fff;color:var(--text);border:1.5px solid var(--border)";}
+function clearCanvas(){canvasInited=false;initCanvas();}
+async function saveDrawing(){
+  loading(true,"Saving drawing…");
+  const c=document.getElementById("draw-canvas");currentSurvey.elevation=c.toDataURL("image/png");
+  document.getElementById("elevation-img").src=currentSurvey.elevation;document.getElementById("elev-preview").src=currentSurvey.elevation;
+  document.getElementById("elev-preview-wrap").classList.remove("hidden");document.getElementById("no-elevation").classList.add("hidden");document.getElementById("survey-canvas-wrap").classList.remove("hidden");
+  renderPins();await persistSurvey({elevation:currentSurvey.elevation});loading(false);showScreen("screen-app");showToast("✓ Drawing saved");
+}
+
+/* ── PHOTO ANNOTATOR ── */
+function startAnnotate(which){
+  const photo=which==="after"?currentAfterPhoto:currentDefectPhoto;
+  if(!photo){showToast("No photo to annotate.");return;}
+  document.getElementById("defect-modal").classList.add("hidden");
+  openAnnotator(photo,(annotated)=>{
+    if(which==="after")currentAfterPhoto=annotated;else currentDefectPhoto=annotated;
+    document.getElementById("defect-modal").classList.remove("hidden");
+    updatePhotoWrap(which);
+  });
+}
+
+function openAnnotator(photoSrc,callback){
+  annCallback=callback;annHistory=[];annDrawing=false;
+  const screen=document.getElementById("annotator-screen");
+  screen.style.display="flex";
+  const canvas=document.getElementById("annotator-canvas");
+  const img=new Image();
+  img.onload=()=>{
+    annImg=img;
+    const maxW=window.innerWidth,maxH=window.innerHeight-100;
+    const r=Math.min(1,maxW/img.width,maxH/img.height);
+    canvas.width=Math.round(img.width*r);canvas.height=Math.round(img.height*r);
+    canvas.style.width=canvas.width+"px";canvas.style.height=canvas.height+"px";
+    redrawAnnotator();
+  };img.src=photoSrc;
+  // Events
+  canvas.onmousedown=canvas.ontouchstart=annStart;
+  canvas.onmousemove=canvas.ontouchmove=annMove;
+  canvas.onmouseup=canvas.ontouchend=canvas.onmouseleave=annEnd;
+}
+
+function redrawAnnotator(){
+  const canvas=document.getElementById("annotator-canvas");const ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.drawImage(annImg,0,0,canvas.width,canvas.height);
+  annHistory.forEach(item=>drawAnnItem(ctx,item));
+}
+
+function drawAnnItem(ctx,item){
+  ctx.strokeStyle=item.color;ctx.fillStyle=item.color;ctx.lineWidth=3;ctx.lineCap="round";ctx.lineJoin="round";
+  if(item.type==="pen"){ctx.beginPath();item.points.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));ctx.stroke();}
+  else if(item.type==="circle"){const rx=Math.abs(item.x2-item.x1)/2,ry=Math.abs(item.y2-item.y1)/2;ctx.beginPath();ctx.ellipse(item.x1+rx*(item.x2>item.x1?1:-1)*(item.x2>item.x1?1:0)+Math.min(item.x1,item.x2)+rx,Math.min(item.y1,item.y2)+ry,rx,ry,0,0,Math.PI*2);ctx.stroke();}
+  else if(item.type==="arrow"){const dx=item.x2-item.x1,dy=item.y2-item.y1,len=Math.sqrt(dx*dx+dy*dy);if(len<5)return;const nx=dx/len,ny=dy/len,hw=12,ha=20;ctx.beginPath();ctx.moveTo(item.x1,item.y1);ctx.lineTo(item.x2,item.y2);ctx.stroke();ctx.beginPath();ctx.moveTo(item.x2,item.y2);ctx.lineTo(item.x2-nx*ha+ny*hw,item.y2-ny*ha-nx*hw);ctx.lineTo(item.x2-nx*ha-ny*hw,item.y2-ny*ha+nx*hw);ctx.closePath();ctx.fill();}
+  else if(item.type==="text"){ctx.font="bold 20px Arial";ctx.fillText(item.text,item.x,item.y);}
+}
+
+function annPos(e){
+  const c=document.getElementById("annotator-canvas"),r=c.getBoundingClientRect();
+  const t=e.touches?.[0]||e.changedTouches?.[0]||e;
+  return{x:(t.clientX-r.left)*(c.width/r.width),y:(t.clientY-r.top)*(c.height/r.height)};
+}
+
+function annStart(e){
+  e.preventDefault();annDrawing=true;const p=annPos(e);annStartX=p.x;annStartY=p.y;
+  if(annTool==="pen"){annHistory.push({type:"pen",color:annColor,points:[p]});}
+  else if(annTool==="text"){
+    const txt=prompt("Enter text:");if(!txt)return;
+    annHistory.push({type:"text",color:annColor,text:txt,x:p.x,y:p.y});
+    redrawAnnotator();annDrawing=false;
+  }
+}
+function annMove(e){
+  e.preventDefault();if(!annDrawing)return;const p=annPos(e);
+  const canvas=document.getElementById("annotator-canvas"),ctx=canvas.getContext("2d");
+  if(annTool==="pen"){annHistory[annHistory.length-1].points.push(p);redrawAnnotator();}
+  else if(annTool==="circle"||annTool==="arrow"){
+    redrawAnnotator();
+    const tmp={type:annTool,color:annColor,x1:annStartX,y1:annStartY,x2:p.x,y2:p.y};
+    drawAnnItem(ctx,tmp);
+  }
+}
+function annEnd(e){
+  e.preventDefault();if(!annDrawing)return;annDrawing=false;const p=annPos(e);
+  if(annTool==="circle"||annTool==="arrow"){annHistory.push({type:annTool,color:annColor,x1:annStartX,y1:annStartY,x2:p.x,y2:p.y});}
+  redrawAnnotator();
+}
+
+function setAnnTool(t){
+  annTool=t;
+  ["pen","arrow","circle","text"].forEach(x=>{document.getElementById("ann-"+x)?.classList.toggle("sel",x===t);});
+}
+function setAnnColor(el){
+  annColor=el.dataset.color;
+  document.querySelectorAll(".color-dot").forEach(d=>d.classList.remove("sel"));
+  el.classList.add("sel");
+}
+function annUndo(){if(annHistory.length){annHistory.pop();redrawAnnotator();}}
+function closeAnnotator(save){
+  document.getElementById("annotator-screen").style.display="none";
+  if(save&&annCallback){
+    const canvas=document.getElementById("annotator-canvas");
+    annCallback(canvas.toDataURL("image/jpeg",0.82));
+  }
+  annCallback=null;
+}
+
+/* ── Pins ── */
+function toggleAddMode(force){addMode=force!==undefined?force:!addMode;document.getElementById("add-mode-btn").textContent=addMode?"✕ Cancel":"+ Tag";document.getElementById("add-mode-btn").classList.toggle("active",addMode);document.getElementById("add-mode-btn").classList.toggle("inactive",!addMode);document.getElementById("add-mode-banner").classList.toggle("hidden",!addMode);document.getElementById("elevation-img").style.cursor=addMode?"crosshair":"default";}
+document.getElementById("add-mode-btn").onclick=()=>toggleAddMode();
+document.getElementById("elevation-img").addEventListener("click",function(e){if(!addMode)return;const r=this.getBoundingClientRect();pendingPin={x:Math.max(0,Math.min(100,(e.clientX-r.left)/r.width*100)),y:Math.max(0,Math.min(100,(e.clientY-r.top)/r.height*100))};openDefectModal(null);});
+function renderPins(){
+  const container=document.getElementById("pin-container");container.querySelectorAll(".pin").forEach(p=>p.remove());
+  const defects=currentSurvey?.defects||[];document.getElementById("survey-tag-count").textContent=defects.length+" tags";
+  defects.forEach((d,i)=>{
+    const btn=document.createElement("button");btn.className="pin";btn.style.left=d.x+"%";btn.style.top=d.y+"%";
+    const hex=SEV_HEX[d.severity]||"#b45309";
+    const hasAfter=d.afterPhoto||d.afterNotes;
+    btn.innerHTML=`<div class="pin-head" style="background:${hasAfter?"#1a5a8a":hex}"><span>${i+1}</span></div>`;
+    btn.onclick=e=>{if(!addMode){e.stopPropagation();openDetailModal(d,i+1);}};
+    container.appendChild(btn);
+  });
+}
+
+/* ── Defect Modal ── */
+function openDefectModal(defect){
+  const isCompleted=currentSurvey.surveyType==="completed";
+  editingId=defect?defect.id:null;
+  currentDefectPhoto=defect?.photo||null;
+  currentAfterPhoto=defect?.afterPhoto||null;
+  selectedType=defect?.type||TYPES[0];selectedSev=defect?.severity||"medium";
+  document.getElementById("df-ref").value=defect?.ref||"";
+  document.getElementById("df-notes").value=defect?.notes||"";
+  document.getElementById("df-after-notes").value=defect?.afterNotes||"";
+  // Modal title
+  if(isCompleted){document.getElementById("modal-title").textContent="✅ Add After Photos";}
+  else{document.getElementById("modal-title").textContent=defect?"✏️ Edit Defect":"📍 Tag Defect";}
+  document.getElementById("df-delete-btn").style.display=defect&&!isCompleted?"block":"none";
+  document.getElementById("df-save-btn").textContent=isCompleted?"Save After Photos ✓":defect?"Save Changes ✓":"Tag Defect ✓";
+  // Show/hide sections
+  document.getElementById("after-photo-section").classList.toggle("hidden",!isCompleted);
+  document.getElementById("before-photo-lbl").textContent=isCompleted?"Before Photo":"Photo";
+  document.getElementById("defect-type-sev-section").classList.toggle("hidden",isCompleted);
+  updatePhotoWrap("before");updatePhotoWrap("after");
+  document.querySelectorAll(".type-btn").forEach(b=>b.classList.toggle("sel",b.textContent===selectedType));
+  document.querySelectorAll(".sev-btn").forEach((b,i)=>{const s=SEVS[i];const act=s.id===selectedSev;b.style.cssText=act?`border-color:${s.colV};background:${s.ltV};color:${s.colV}`:"";b.classList.toggle("sel",act);});
+  document.getElementById("defect-modal").classList.remove("hidden");
+}
+function closeDefectModal(){document.getElementById("defect-modal").classList.add("hidden");pendingPin=null;editingId=null;toggleAddMode(false);}
+
+function updatePhotoWrap(which){
+  const isAfter=which==="after";
+  const wrapId=isAfter?"df-after-photo-wrap":"df-photo-wrap";
+  const inputId=isAfter?"df-after-photo-input":"df-photo-input";
+  const photo=isAfter?currentAfterPhoto:currentDefectPhoto;
+  const wrap=document.getElementById(wrapId);
+  if(photo){
+    wrap.innerHTML=`<div style="position:relative">
+      <img src="${photo}" style="width:100%;max-height:200px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border)"/>
+      <div style="display:flex;gap:6px;margin-top:6px">
+        <button onclick="openAnnotator('${which}')" style="flex:1;padding:8px;border-radius:8px;border:1.5px solid var(--green);background:#fff;color:var(--green);font-family:'Inter',sans-serif;font-size:11px;font-weight:700">✏️ Annotate</button>
+        <button onclick="clearPhoto('${which}')" style="flex:0 0 auto;padding:8px 12px;border-radius:8px;border:1.5px solid #f5c6c2;background:#fce8e6;color:#c0392b;font-family:'Inter',sans-serif;font-size:11px;font-weight:700">Remove</button>
+      </div>
+    </div>`;
+  }else{
+    wrap.innerHTML=`<button class="photo-btn" onclick="document.getElementById('${inputId}').click()"><span style="font-size:22px">📷</span>${isAfter?"Add After Photo":"Capture / Upload Photo"}</button>`;
+  }
+}
+
+
+
+function clearPhoto(which){
+  if(which==="after"){currentAfterPhoto=null;}else{currentDefectPhoto=null;}
+  updatePhotoWrap(which);
+}
+
+async function handleDefectPhoto(event,which){
+  const f=event.target.files?.[0];if(!f)return;
+  const reader=new FileReader();
+  reader.onload=async ev=>{
+    const compressed=await compress(ev.target.result,500,0.55);
+    if(which==="after")currentAfterPhoto=compressed;else currentDefectPhoto=compressed;
+    updatePhotoWrap(which);
+  };
+  reader.readAsDataURL(f);event.target.value="";
+}
+
+async function saveDefect(){
+  const refVal=document.getElementById("df-ref").value.trim(),notesVal=document.getElementById("df-notes").value.trim();
+  const afterNotesVal=document.getElementById("df-after-notes").value.trim();
+  const isCompleted=currentSurvey.surveyType==="completed";
+  const mediaUpdates={};
+  if(editingId){
+    const idx=currentSurvey.defects.findIndex(d=>d.id===editingId);
+    if(idx>=0){
+      const old=currentSurvey.defects[idx];
+      if(!isCompleted){
+        if(old.photo!==currentDefectPhoto)mediaUpdates["photo_"+editingId]=currentDefectPhoto;
+        currentSurvey.defects[idx]={...old,ref:refVal,type:selectedType,severity:selectedSev,notes:notesVal,photo:currentDefectPhoto,afterPhoto:currentAfterPhoto,afterNotes:afterNotesVal};
+      }else{
+        if(old.afterPhoto!==currentAfterPhoto)mediaUpdates["after_"+editingId]=currentAfterPhoto;
+        currentSurvey.defects[idx]={...old,afterPhoto:currentAfterPhoto,afterNotes:afterNotesVal,photo:currentDefectPhoto};
+      }
+    }
+  }else{
+    const newId=uid();
+    currentSurvey.defects.push({id:newId,ref:refVal,type:selectedType,severity:selectedSev,notes:notesVal,photo:currentDefectPhoto,afterPhoto:null,afterNotes:"",x:pendingPin.x,y:pendingPin.y,createdAt:new Date().toISOString()});
+    if(currentDefectPhoto)mediaUpdates["photo_"+newId]=currentDefectPhoto;
+  }
+  loading(true,"Saving…");
+  await persistSurvey(mediaUpdates);loading(false);
+  renderPins();renderDefectList();
+  document.getElementById("defect-modal").classList.add("hidden");
+  toggleAddMode(false);pendingPin=null;editingId=null;
+  showToast(isCompleted?"✅ After photos saved":"✓ Defect saved");
+}
+
+async function deleteDefect(){
+  if(!editingId||!confirm("Delete this defect?"))return;
+  const d=currentSurvey.defects.find(x=>x.id===editingId);
+  currentSurvey.defects=currentSurvey.defects.filter(x=>x.id!==editingId);
+  const mediaUpdates={};if(d?.photo)mediaUpdates["photo_"+editingId]=null;if(d?.afterPhoto)mediaUpdates["after_"+editingId]=null;
+  loading(true,"Deleting…");await persistSurvey(mediaUpdates);loading(false);
+  renderPins();renderDefectList();
+  document.getElementById("defect-modal").classList.add("hidden");editingId=null;
+  showToast("Defect deleted");
+}
+
+/* ── Detail Modal ── */
+function openDetailModal(d,num){
+  const s=SEVS.find(x=>x.id===d.severity)||SEVS[1];
+  document.getElementById("detail-title").textContent=d.type;
+  document.getElementById("detail-sheet").style.borderTopColor=d.afterPhoto?"#1a5a8a":SEV_HEX[d.severity]||"#b45309";
+  const badges=document.getElementById("detail-badges");badges.innerHTML="";
+  if(d.ref)badges.innerHTML+=`<span class="badge" style="background:var(--card);color:var(--muted);border:1.5px solid var(--border)">${d.ref}</span>`;
+  badges.innerHTML+=`<span class="badge" style="background:${s.ltV};color:${s.colV}">${s.label} — ${s.sub}</span>`;
+  if(d.afterPhoto)badges.innerHTML+=`<span class="badge" style="background:var(--complete-lt);color:var(--complete)">✅ Completed</span>`;
+  // Photos
+  const photosRow=document.getElementById("detail-photos-row");
+  const singlePhoto=document.getElementById("detail-photo");
+  if(d.photo&&d.afterPhoto){
+    photosRow.style.display="flex";singlePhoto.style.display="none";
+    photosRow.innerHTML=`
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Before</div>
+        <img src="${d.photo}" style="width:100%;height:130px;object-fit:cover;border-radius:10px;border:1.5px solid var(--border)"/>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:10px;font-weight:700;color:var(--complete);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">After</div>
+        <img src="${d.afterPhoto}" style="width:100%;height:130px;object-fit:cover;border-radius:10px;border:1.5px solid #b8d0e8"/>
+      </div>`;
+  }else if(d.photo){photosRow.style.display="none";singlePhoto.src=d.photo;singlePhoto.style.display="block";}
+  else{photosRow.style.display="none";singlePhoto.style.display="none";}
+  const nt=document.getElementById("detail-notes");if(d.notes){nt.textContent=d.notes;nt.style.display="block";}else nt.style.display="none";
+  const ant=document.getElementById("detail-after-notes");if(d.afterNotes){ant.innerHTML="✅ <strong>Works completed:</strong> "+d.afterNotes;ant.style.display="block";}else ant.style.display="none";
+  document.getElementById("detail-date").textContent="Tagged "+new Date(d.createdAt).toLocaleString();
+  document.getElementById("detail-edit-btn").onclick=()=>{closeDetailModal();openDefectModal(d);};
+  document.getElementById("detail-modal").classList.remove("hidden");
+}
+function closeDetailModal(){document.getElementById("detail-modal").classList.add("hidden");}
+
+function renderDefectList(){
+  const defects=currentSurvey?.defects||[];
+  const isCompleted=currentSurvey.surveyType==="completed";
+  const list=document.getElementById("defect-list"),nodef=document.getElementById("no-defects");list.innerHTML="";
+  const sevCounts={};SEVS.forEach(s=>{sevCounts[s.id]=defects.filter(d=>d.severity===s.id).length;});
+  document.getElementById("summary-grid").innerHTML=SEVS.map(s=>`<div class="summary-card"><div style="font-size:24px;font-weight:700;line-height:1;color:${s.hex}">${sevCounts[s.id]}</div><div style="font-size:9px;text-transform:uppercase;color:var(--muted);margin-top:4px;font-weight:600">${s.label}</div></div>`).join("");
+  document.getElementById("export-btn").style.opacity=defects.length?"1":".4";
+  if(!defects.length){nodef.classList.remove("hidden");return;}
+  nodef.classList.add("hidden");
+  defects.forEach((d,i)=>{
+    const s=SEVS.find(x=>x.id===d.severity)||SEVS[1];const hex=d.afterPhoto?"#1a5a8a":SEV_HEX[d.severity]||"#b45309";
+    const card=document.createElement("div");card.className="defect-card";
+    const afterBadge=d.afterPhoto?`<span style="font-size:9px;font-weight:700;color:var(--complete);background:var(--complete-lt);padding:2px 6px;border-radius:8px">✅ Done</span>`:"";
+    const needsAfter=isCompleted&&!d.afterPhoto?`<span style="font-size:9px;font-weight:700;color:#b45309;background:#fef3e2;padding:2px 6px;border-radius:8px">📷 Add after photo</span>`:"";
+    card.innerHTML=`<div class="defect-stripe" style="background:${hex}"></div><div style="flex:1;padding:12px 14px;display:flex;gap:12px;align-items:center;min-width:0"><div class="defect-num" style="background:${d.afterPhoto?"var(--complete-lt)":s.ltV};color:${hex}">${i+1}</div><div style="min-width:0;flex:1"><div style="color:var(--text);font-size:13px;font-weight:700">${d.type}</div><div style="display:flex;gap:5px;margin-top:4px;flex-wrap:wrap;align-items:center">${d.ref?`<span style="color:var(--muted);font-size:10px;font-weight:600">${d.ref}</span>`:""}<span style="color:${SEV_HEX[d.severity]||"#b45309"};font-size:10px;font-weight:700">${s.label}</span>${afterBadge}${needsAfter}</div>${d.notes?`<div style="color:var(--dim);font-size:11px;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${d.notes}</div>`:""}</div>${d.photo?`<img src="${d.photo}" class="defect-thumb"/>`:""}</div>`;
+    card.onclick=()=>openDetailModal(d,i+1);list.appendChild(card);
+  });
+}
+
+/* ── PDF EXPORT ── */
+function imgToCanvas(src){return new Promise(res=>{const img=new Image();img.onload=()=>{const c=document.createElement("canvas");c.width=img.width;c.height=img.height;c.getContext("2d").drawImage(img,0,0);res(c.toDataURL("image/jpeg",0.82));};img.onerror=()=>res(null);img.src=src;});}
+function buildElevationCanvas(){return new Promise(res=>{const img=new Image();img.onload=()=>{const mW=900,mH=560,r=Math.min(1,mW/img.width,mH/img.height);const w=Math.round(img.width*r),h=Math.round(img.height*r);const c=document.createElement("canvas");c.width=w;c.height=h;const ctx=c.getContext("2d");ctx.drawImage(img,0,0,w,h);(currentSurvey.defects||[]).forEach((d,i)=>{const px=d.x/100*w,py=d.y/100*h;const s=SEVS.find(x=>x.id===d.severity)||SEVS[1];const[r2,g,b]=d.afterPhoto?[26,90,138]:s.pdfRgb;ctx.save();ctx.beginPath();ctx.arc(px,py-14,12,0,Math.PI*2);ctx.fillStyle="rgba(0,0,0,0.2)";ctx.fill();ctx.beginPath();ctx.arc(px,py-15,12,0,Math.PI*2);ctx.fillStyle=`rgb(${r2},${g},${b})`;ctx.fill();ctx.strokeStyle="rgba(255,255,255,.9)";ctx.lineWidth=2;ctx.stroke();ctx.fillStyle="#fff";ctx.font="bold 11px Arial";ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(String(i+1),px,py-15);ctx.restore();});res(c.toDataURL("image/jpeg",0.88));};img.src=currentSurvey.elevation;});}
+
+async function exportPDF(){
+  if(!currentSurvey?.defects?.length){showToast("No defects to export yet.");return;}
+  const btn=document.getElementById("export-btn");btn.textContent="⏳ Generating PDF…";btn.disabled=true;
+  const isCompleted=currentSurvey.surveyType==="completed";
+  try{
+    const{jsPDF}=window.jspdf;const doc=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+    const PW=210,PH=297,M=14,CW=182;let y=M;
+    const sf=(sz,bold=false,rgb=[26,40,32])=>{doc.setFont("helvetica",bold?"bold":"normal");doc.setFontSize(sz);doc.setTextColor(...rgb);};
+    const hl=(yy,rgb=[200,210,202],lw=0.2)=>{doc.setDrawColor(...rgb);doc.setLineWidth(lw);doc.line(M,yy,PW-M,yy);};
+    const chk=(need)=>{if(y+need>PH-14){doc.addPage();y=M;}};
+
+    // Header
+    doc.setFillColor(26,74,42);doc.rect(0,0,PW,22,"F");doc.setFillColor(42,110,63);doc.rect(0,22,PW,1,"F");
+    try{doc.addImage("data:image/jpeg;base64,"+LOGO_DATA,"JPEG",M,3,16,16);}catch{}
+    sf(13,true,[255,255,255]);doc.text("FaçadeLog",M+19,10);
+    sf(7,false,[180,220,190]);doc.text(isCompleted?"Glass Aftercare  -  Completed Works Report":"Glass Aftercare  -  Condition Survey Report",M+19,15.5);
+    sf(7,false,[160,200,170]);doc.text(new Date().toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"}),PW-M,12,{align:"right"});
+    y=28;
+
+    // Survey type badge
+    if(isCompleted){
+      doc.setFillColor(26,90,138);doc.roundedRect(M,y,55,7,2,2,"F");
+      sf(7,true,[255,255,255]);doc.text("COMPLETED WORKS SURVEY",M+27.5,y+4.8,{align:"center"});
+      y+=11;
+    }
+    sf(16,true,[26,40,32]);doc.text(currentSurvey.name||"Untitled",M,y+8);y+=12;
+    sf(8,false,[80,110,90]);
+    if(currentSurvey.surveyor){doc.text("Surveyor: "+currentSurvey.surveyor,M,y);y+=5;}
+    if(isCompleted&&currentSurvey.completedDate){
+      doc.text("Works completed: "+new Date(currentSurvey.completedDate).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"}),M,y);y+=5;
+    }
+    doc.text("Original survey: "+new Date(currentSurvey.created).toLocaleDateString("en-GB",{day:"numeric",month:"long",year:"numeric"})+"   |   "+currentSurvey.defects.length+" defect"+(currentSurvey.defects.length===1?"":"s")+" recorded",M,y);
+    y+=5;hl(y,[180,210,190],0.5);y+=6;
+
+    // Summary
+    sf(8,true,[60,90,70]);doc.text("DEFECT SUMMARY BY SEVERITY",M,y);y+=5;
+    const cW=CW/4;SEVS.forEach((s,i)=>{const cnt=currentSurvey.defects.filter(d=>d.severity===s.id).length;const x=M+i*cW;const[r2,g,b]=s.pdfRgb;doc.setFillColor(r2,g,b);doc.roundedRect(x,y,cW-3,14,2,2,"F");sf(18,true,[255,255,255]);doc.text(String(cnt),x+(cW-3)/2,y+8.5,{align:"center"});sf(6,false,[240,250,242]);doc.text(s.label.toUpperCase(),x+(cW-3)/2,y+13,{align:"center"});});y+=18;hl(y,[180,210,190],0.5);y+=6;
+
+    // Elevation
+    if(currentSurvey.elevation){
+      sf(8,true,[60,90,70]);doc.text("ELEVATION DRAWING — DEFECT LOCATIONS",M,y);y+=4;
+      const eD=await buildElevationCanvas();const tI=new Image();await new Promise(r=>{tI.onload=r;tI.src=eD;});
+      const iw=tI.naturalWidth||700,ih=tI.naturalHeight||420,ir=Math.min(CW/iw,82/ih);
+      const dw=iw*ir,dh=ih*ir,ix=M+(CW-dw)/2;
+      doc.setFillColor(240,245,241);doc.rect(ix-2,y-2,dw+4,dh+4,"F");doc.setDrawColor(180,210,190);doc.setLineWidth(0.4);doc.rect(ix-2,y-2,dw+4,dh+4);
+      doc.addImage(eD,"JPEG",ix,y,dw,dh);y+=dh+6;hl(y,[180,210,190],0.5);y+=6;
+    }
+
+    // Defect schedule
+    sf(8,true,[60,90,70]);doc.text(isCompleted?"COMPLETED WORKS SCHEDULE":"DEFECT SCHEDULE",M,y);y+=6;
+    for(let i=0;i<currentSurvey.defects.length;i++){
+      const d=currentSurvey.defects[i];const s=SEVS.find(x=>x.id===d.severity)||SEVS[1];
+      const[r2,g,b]=d.afterPhoto?[26,90,138]:s.pdfRgb;chk(26);
+      // Row header
+      doc.setFillColor(242,246,243);doc.roundedRect(M,y,CW,8,1,1,"F");
+      doc.setFillColor(r2,g,b);doc.rect(M,y,3,8,"F");
+      sf(8,true,[26,40,32]);doc.text(`${i+1}.  ${d.ref?d.ref+" — ":""}${d.type}`,M+5,y+5.2);
+      const pill=d.afterPhoto?"COMPLETED":s.label.toUpperCase(),pw2=doc.getTextWidth(pill)+5;
+      doc.setFillColor(r2,g,b);doc.roundedRect(PW-M-pw2,y+1.5,pw2,5,1,1,"F");
+      sf(6,true,[255,255,255]);doc.text(pill,PW-M-pw2/2,y+5,{align:"center"});y+=10;
+
+      if(d.photo&&d.afterPhoto){
+        // Before / After side by side
+        chk(48);
+        const halfW=(CW-4)/2;
+        sf(7,true,[100,120,100]);doc.text("BEFORE",M,y+3);doc.text("AFTER",M+halfW+4,y+3);y+=5;
+        const bD=await imgToCanvas(d.photo);const aD=await imgToCanvas(d.afterPhoto);
+        try{if(bD)doc.addImage(bD,"JPEG",M,y,halfW,38);}catch{}
+        try{if(aD)doc.addImage(aD,"JPEG",M+halfW+4,y,halfW,38);}catch{}
+        y+=40;
+      }else if(d.photo){
+        chk(42);const pD=await imgToCanvas(d.photo);if(pD){try{doc.addImage(pD,"JPEG",M,y,52,40);}catch{}}
+        const tX=M+56,tW=CW-56;
+        sf(7,false,[80,110,90]);doc.text("Tagged: "+new Date(d.createdAt).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"}),tX,y+4);
+        let tY=y+9;if(d.notes){sf(8,false,[40,60,45]);const lines=doc.splitTextToSize(d.notes,tW);lines.forEach(ln=>{chk(5);doc.text(ln,tX,tY);tY+=5;});}
+        y+=Math.max(42,tY-y)+2;
+      }else{
+        sf(7,false,[80,110,90]);doc.text("Tagged: "+new Date(d.createdAt).toLocaleString("en-GB",{day:"2-digit",month:"short",year:"numeric"}),M,y+4);
+        let tY=y+9;if(d.notes){sf(8,false,[40,60,45]);const lines=doc.splitTextToSize(d.notes,CW);lines.forEach(ln=>{chk(5);doc.text(ln,M,tY);tY+=5;});}
+        y+=Math.max(12,tY-y)+2;
+      }
+      // After notes
+      if(d.afterNotes){chk(8);sf(8,false,[26,90,138]);doc.text("✅ Works: "+d.afterNotes,M,y);y+=6;}
+      hl(y,[210,225,213],0.2);y+=4;
+    }
+
+    // Footer
+    const pages=doc.getNumberOfPages();
+    for(let p=1;p<=pages;p++){doc.setPage(p);doc.setFillColor(240,245,241);doc.rect(0,PH-8,PW,8,"F");doc.setDrawColor(180,210,190);doc.setLineWidth(0.3);doc.line(0,PH-8,PW,PH-8);sf(6,false,[100,140,110]);doc.text("Glass Aftercare FaçadeLog  |  "+currentSurvey.name,M,PH-3);doc.text("Page "+p+" of "+pages,PW-M,PH-3,{align:"right"});}
+    doc.save("GA_"+(isCompleted?"CompletedWorks":"FacadeLog")+"_"+(currentSurvey.name||"survey").replace(/[^a-z0-9]/gi,"_").slice(0,40).toLowerCase()+".pdf");
+    showToast("✓ PDF downloaded!");
+  }catch(err){console.error(err);showToast("Export failed.");}
+  finally{document.getElementById("export-btn").innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export Survey Report (PDF)';document.getElementById("export-btn").disabled=false;}
+}
+
+/* ── Init ── */
+function buildGrids(){
+  const tg=document.getElementById("type-grid");TYPES.forEach(t=>{const b=document.createElement("button");b.className="type-btn"+(t===selectedType?" sel":"");b.textContent=t;b.onclick=()=>{selectedType=t;tg.querySelectorAll(".type-btn").forEach(x=>x.classList.toggle("sel",x.textContent===t));};tg.appendChild(b);});
+  const sg=document.getElementById("sev-grid");SEVS.forEach(s=>{const b=document.createElement("button");b.className="sev-btn"+(s.id===selectedSev?" sel":"");b.style.cssText=s.id===selectedSev?`border-color:${s.colV};background:${s.ltV};color:${s.colV}`:"";b.innerHTML=`<b style="font-size:13px">${s.label}</b><sub>${s.sub}</sub>`;b.onclick=()=>{selectedSev=s.id;sg.querySelectorAll(".sev-btn").forEach((x,i)=>{const sv=SEVS[i];const act=sv.id===s.id;x.style.cssText=act?`border-color:${sv.colV};background:${sv.ltV};color:${sv.colV}`:"";x.classList.toggle("sel",act);});};sg.appendChild(b);});
+}
+
+buildGrids();
+showScreen("screen-auth");
+function waitForFirebase(cb,tries=0){
+  if(typeof firebase!=="undefined"&&firebase.app&&firebase.auth){cb();}
+  else if(tries>60){showToast("Network error — check connection",5000);}
+  else{setTimeout(()=>waitForFirebase(cb,tries+1),200);}
+}
+waitForFirebase(()=>{
+  initFirebase({
+    apiKey:"AIzaSyAuy0M7KfQViBQeqnVZkKCyWg_UmZ9RGv4",
+    authDomain:"facadelogga.firebaseapp.com",
+    projectId:"facadelogga",
+    appId:"1:829294091913:web:eea2937ccc53cc99d87058"
+  });
+});
+</script>
+</body>
+</html>
